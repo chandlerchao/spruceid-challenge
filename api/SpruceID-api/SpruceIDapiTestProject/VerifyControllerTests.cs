@@ -1,4 +1,3 @@
-using Xunit;
 using Moq;
 using Microsoft.AspNetCore.Mvc;
 using SpruceID_api.Controllers;
@@ -10,88 +9,117 @@ namespace SpruceIDapiTestProject.Controllers
 {
     public class VerifyControllerTests
     {
-        private readonly Mock<ISignatureVerificationService> _mockVerificationService;
+        private readonly Mock<ISignatureVerificationService> _verificationServiceMock;
         private readonly VerifyController _controller;
 
         public VerifyControllerTests()
         {
-            _mockVerificationService = new Mock<ISignatureVerificationService>();
-            // Use a derived controller that accepts the service for testing
-            _controller = new TestableVerifyController(_mockVerificationService.Object);
+            _verificationServiceMock = new Mock<ISignatureVerificationService>();
+            _controller = new VerifyController(_verificationServiceMock.Object);
         }
 
         [Fact]
-        public void Post_ValidSignature_ReturnsOk()
+        public void Post_ReturnsBadRequest_WhenPublicKeyIsInvalid()
         {
-            var payload = new PayloadData { Message = "msg", Nonce = "nonce", Timestamp = 1234567890 };
-            var request = new PayloadWithSignature { Payload = payload, Signature = "validsig" };
-            var publicKey = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            _verificationServiceMock.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns((PublicKey)null);
 
-            _mockVerificationService.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(publicKey);
-            _mockVerificationService.Setup(s => s.CheckNonce(payload)).Returns(true);
-            _mockVerificationService.Setup(s => s.VerifySignature(publicKey, It.IsAny<string>(), "validsig")).Returns(true);
-
+            var request = new PayloadWithSignature { Payload = new { }, Signature = "sig" };
             var result = _controller.Post(request);
 
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.Contains("Signature is valid", okResult.Value.ToString());
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("Invalid public key", badRequest.Value.ToString());
         }
 
         [Fact]
-        public void Post_InvalidSignature_ReturnsUnauthorized()
+        public void Post_ReturnsBadRequest_WhenPayloadOrSignatureIsMissing()
         {
-            var payload = new PayloadData { Message = "msg", Nonce = "nonce", Timestamp = 1234567890 };
-            var request = new PayloadWithSignature { Payload = payload, Signature = "invalidsig" };
-            var publicKey = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            // Use a valid PublicKey instance via Import (since PublicKey has no public constructor)
+            var pk = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            _verificationServiceMock.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(pk);
 
-            _mockVerificationService.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(publicKey);
-            _mockVerificationService.Setup(s => s.CheckNonce(payload)).Returns(true);
-            _mockVerificationService.Setup(s => s.VerifySignature(publicKey, It.IsAny<string>(), "invalidsig")).Returns(false);
+            var result = _controller.Post(null);
 
-            var result = _controller.Post(request);
-
-            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
-            Assert.Contains("Invalid signature", unauthorizedResult.Value.ToString());
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("Payload and signature are required", badRequest.Value.ToString());
         }
 
         [Fact]
-        public void Post_UsedNonce_ReturnsUnauthorized()
+        public void Post_ReturnsBadRequest_WhenPayloadIsEmpty()
         {
-            var payload = new PayloadData { Message = "msg", Nonce = "usednonce", Timestamp = 1234567890 };
-            var request = new PayloadWithSignature { Payload = payload, Signature = "anysig" };
-            var publicKey = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            var pk = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            _verificationServiceMock.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(pk);
 
-            _mockVerificationService.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(publicKey);
-            _mockVerificationService.Setup(s => s.CheckNonce(payload)).Returns(false);
-
+            var request = new PayloadWithSignature { Payload = "", Signature = "sig" };
             var result = _controller.Post(request);
 
-            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
-            Assert.Contains("Nonce has already been used", unauthorizedResult.Value.ToString());
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("Payload is empty", badRequest.Value.ToString());
         }
 
         [Fact]
-        public void Post_ExceptionThrown_ReturnsBadRequest()
+        public void Post_ReturnsBadRequest_WhenPayloadStructureIsInvalid()
         {
-            var payload = new PayloadData { Message = "msg", Nonce = "nonce", Timestamp = 1234567890 };
-            var request = new PayloadWithSignature { Payload = payload, Signature = "anysig" };
+            var pk = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            _verificationServiceMock.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(pk);
 
-            _mockVerificationService.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Throws(new Exception("File not found"));
+            var request = new PayloadWithSignature { Payload = "{}", Signature = "sig" };
+            var result = _controller.Post(request);
+
+            var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+            Assert.Contains("Invalid payload structure", badRequest.Value.ToString());
+        }
+
+        [Fact]
+        public void Post_ReturnsUnauthorized_WhenNonceCheckFails()
+        {
+            var pk = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            _verificationServiceMock.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(pk);
+            _verificationServiceMock.Setup(s => s.CheckNonce(It.IsAny<PayloadData>())).Returns(false);
+
+            var payloadData = new PayloadData { Message = "msg", Nonce = "nonce", Timestamp = 1234567890 };
+            var payloadJson = Newtonsoft.Json.JsonConvert.SerializeObject(payloadData);
+            var request = new PayloadWithSignature { Payload = payloadJson, Signature = "sig" };
 
             var result = _controller.Post(request);
 
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Contains("File not found", badRequestResult.Value.ToString());
+            var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Contains("Nonce has already been used", unauthorized.Value.ToString());
         }
 
-        // Helper to inject the mock service
-        private class TestableVerifyController : VerifyController
+        [Fact]
+        public void Post_ReturnsOk_WhenSignatureIsValid()
         {
-            public TestableVerifyController(ISignatureVerificationService verificationService)
-                : base(verificationService)
-            {
-                // No need for reflection; base constructor sets the field.
-            }
+            var pk = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            _verificationServiceMock.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(pk);
+            _verificationServiceMock.Setup(s => s.CheckNonce(It.IsAny<PayloadData>())).Returns(true);
+            _verificationServiceMock.Setup(s => s.VerifySignature(pk, It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+            var payloadData = new PayloadData { Message = "msg", Nonce = "nonce", Timestamp = 1234567890 };
+            var payloadJson = Newtonsoft.Json.JsonConvert.SerializeObject(payloadData);
+            var request = new PayloadWithSignature { Payload = payloadJson, Signature = "sig" };
+
+            var result = _controller.Post(request);
+
+            var ok = Assert.IsType<OkObjectResult>(result);
+            Assert.Contains("Signature is valid", ok.Value.ToString());
+        }
+
+        [Fact]
+        public void Post_ReturnsUnauthorized_WhenSignatureIsInvalid()
+        {
+            var pk = PublicKey.Import(SignatureAlgorithm.Ed25519, new byte[32], KeyBlobFormat.RawPublicKey);
+            _verificationServiceMock.Setup(s => s.LoadEd25519PublicKey(It.IsAny<string>())).Returns(pk);
+            _verificationServiceMock.Setup(s => s.CheckNonce(It.IsAny<PayloadData>())).Returns(true);
+            _verificationServiceMock.Setup(s => s.VerifySignature(pk, It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+
+            var payloadData = new PayloadData { Message = "msg", Nonce = "nonce", Timestamp = 1234567890 };
+            var payloadJson = Newtonsoft.Json.JsonConvert.SerializeObject(payloadData);
+            var request = new PayloadWithSignature { Payload = payloadJson, Signature = "sig" };
+
+            var result = _controller.Post(request);
+
+            var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Contains("Invalid signature", unauthorized.Value.ToString());
         }
     }
 }

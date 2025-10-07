@@ -1,30 +1,16 @@
-import jwt
-import requests
+import base64
 import json
+import nacl.signing
+import os
+import requests
 import secrets
 import time
-import nacl.signing
-import base64
 
-from typing import Final
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
+from typing import Final
     
 URL: Final = "https://localhost:7151/api/Verify"
-
-def generate_timestamp():
-    # Generate a current timestamp in seconds
-    return time.time()
-    
-def generate_nonce():
-    #Generate a secure nonce.
-    return secrets.token_urlsafe(32)
-
-def load_private_key(path):
-    #Load a private key from a file.
-    with open(path, 'rb') as key_file:
-        raw_key = key_file.read()
-    return raw_key
 
 def extract_ed25519_seed_from_pem(keyfile_path):
     # Extract Ed25519 seed from a PEM file
@@ -44,19 +30,28 @@ def extract_ed25519_seed_from_pem(keyfile_path):
 
 key_path = "../.ssh/private.pem"
 
-seed = extract_ed25519_seed_from_pem(key_path)
-print("Raw Ed25519 seed:", seed.hex())
+# Allow user to specify a different key path
+user_input = input(f"Enter the path to your PEM key file [{key_path}]: ").strip()
+if user_input:
+    key_path = user_input
+    
+if not os.path.isfile(key_path):
+    raise FileNotFoundError(f"Key file not found at path: {key_path}")
 
-# Convert the private key string to bytes (assuming it's base64 encoded)
-#private_key_bytes = base64.b64decode(private_key)
+# Extract the Ed25519 seed
+seed = extract_ed25519_seed_from_pem(key_path)
+if len(seed) != 32:
+    raise ValueError("Extracted seed is not 32 bytes long, invalid Ed25519 key.")
+print("Raw Ed25519 seed:", seed.hex())
 
 # The payload to be sent
 payload = {
     "message": "Hello, SpruceID!",
-    "timestamp": generate_timestamp(),
-    "nonce": generate_nonce()
+    "timestamp": time.time(),
+    "nonce": secrets.token_urlsafe(32)
 }
 
+# Sign the payload
 payload_json = json.dumps(payload)
 signing_key = nacl.signing.SigningKey(seed)
 signed = signing_key.sign(payload_json.encode())

@@ -30,16 +30,38 @@ namespace SpruceID_api.Controllers
                 string publicKey = System.IO.File.ReadAllText(PublicKeyFilePath);
                 var pk = _verificationService.LoadEd25519PublicKey(publicKey);
 
-                // Deserialize Payload to PayloadData instance
-                var payloadData = JsonConvert.DeserializeObject<PayloadData>(request.Payload.ToString());
+                if (pk == null)
+                {
+                    return BadRequest(new { message = "Invalid public key." });
+                }
+                if (request == null || request.Payload == null || string.IsNullOrEmpty(request.Signature))
+                {
+                    return BadRequest(new { message = "Payload and signature are required." });
+                }
 
+                // Deserialize Payload to PayloadData instance
+                var payload = request.Payload.ToString();
+
+                if (string.IsNullOrEmpty(payload))
+                {
+                    return BadRequest(new { message = "Payload is empty." });
+                }
+
+                var payloadData = JsonConvert.DeserializeObject<PayloadData>(payload);
+
+                if (payloadData == null || string.IsNullOrEmpty(payloadData.Nonce) || payloadData.Timestamp == 0)
+                {
+                    return BadRequest(new { message = "Invalid payload structure." });
+                }
+
+                // Check nonce and timestamp
                 if (!_verificationService.CheckNonce(payloadData))
                 {
                     return Unauthorized(new { message = "Nonce has already been used or timestamp is invalid." });
                 }
 
-                string jsonPayload = JsonConvert.SerializeObject(request.Payload);
-                bool verified = _verificationService.VerifySignature(pk, jsonPayload, request.Signature);
+                // Verify signature
+                bool verified = _verificationService.VerifySignature(pk, payload, request.Signature);
 
                 if (verified)
                 {
