@@ -53,28 +53,6 @@ namespace SpruceIDapiTestProject.Utilities
         }
 
         [Fact]
-        public void CheckAndAddNonce_NewNonce_ReturnsTrueAndPersists()
-        {
-            var store = new NonceStore(_testFilePath);
-            var nonce = Guid.NewGuid().ToString();
-
-            var result = store.CheckAndAddNonce(nonce);
-
-            Assert.True(result);
-            Assert.True(store.IsNonceUsed(nonce));
-        }
-
-        [Fact]
-        public void CheckAndAddNonce_ExistingNonce_ReturnsFalse()
-        {
-            var store = new NonceStore(_testFilePath);
-            var nonce = Guid.NewGuid().ToString();
-
-            Assert.True(store.CheckAndAddNonce(nonce));
-            Assert.False(store.CheckAndAddNonce(nonce));
-        }
-
-        [Fact]
         public void NonceStore_LoadsNoncesFromFile()
         {
             var nonce = Guid.NewGuid().ToString();

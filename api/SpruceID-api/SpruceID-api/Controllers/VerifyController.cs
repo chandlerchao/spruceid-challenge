@@ -24,6 +24,12 @@ namespace SpruceID_api.Controllers
         {
             try
             {
+                if (!System.IO.File.Exists(PublicKeyFilePath))
+                {
+                    return NotFound(new { message = $"Public key file not found at '{PublicKeyFilePath}'." });
+                }
+
+                // Load public key from file
                 string publicKey = System.IO.File.ReadAllText(PublicKeyFilePath);
                 var pk = _verificationService.LoadEd25519PublicKey(publicKey);
 

@@ -13,7 +13,6 @@ namespace SpruceID_api.Services
             _nonceStore = nonceStore;
         }
 
-        // This is illustrative; you need to add NSec.Cryptography via NuGet
         public PublicKey LoadEd25519PublicKey(string publicKey)
         {
             // Remove PEM header/footer and decode base64

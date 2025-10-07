@@ -27,7 +27,7 @@ namespace SpruceIDapiTestProject.Controllers
             var result = _controller.Post(request);
 
             var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Contains("Invalid public key", badRequest.Value.ToString());
+            Assert.Contains("Invalid public key", badRequest.Value?.ToString());
         }
 
         [Fact]
@@ -40,7 +40,7 @@ namespace SpruceIDapiTestProject.Controllers
             var result = _controller.Post(null);
 
             var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Contains("Payload and signature are required", badRequest.Value.ToString());
+            Assert.Contains("Payload and signature are required", badRequest.Value?.ToString());
         }
 
         [Fact]
@@ -53,7 +53,7 @@ namespace SpruceIDapiTestProject.Controllers
             var result = _controller.Post(request);
 
             var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Contains("Payload is empty", badRequest.Value.ToString());
+            Assert.Contains("Payload is empty", badRequest.Value?.ToString());
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace SpruceIDapiTestProject.Controllers
             var result = _controller.Post(request);
 
             var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Contains("Invalid payload structure", badRequest.Value.ToString());
+            Assert.Contains("Invalid payload structure", badRequest.Value?.ToString());
         }
 
         [Fact]
@@ -83,7 +83,7 @@ namespace SpruceIDapiTestProject.Controllers
             var result = _controller.Post(request);
 
             var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
-            Assert.Contains("Nonce has already been used", unauthorized.Value.ToString());
+            Assert.Contains("Nonce has already been used", unauthorized.Value?.ToString());
         }
 
         [Fact]
@@ -101,7 +101,7 @@ namespace SpruceIDapiTestProject.Controllers
             var result = _controller.Post(request);
 
             var ok = Assert.IsType<OkObjectResult>(result);
-            Assert.Contains("Signature is valid", ok.Value.ToString());
+            Assert.Contains("Signature is valid", ok.Value?.ToString());
         }
 
         [Fact]
@@ -119,7 +119,7 @@ namespace SpruceIDapiTestProject.Controllers
             var result = _controller.Post(request);
 
             var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
-            Assert.Contains("Invalid signature", unauthorized.Value.ToString());
+            Assert.Contains("Invalid signature", unauthorized.Value?.ToString());
         }
     }
 }

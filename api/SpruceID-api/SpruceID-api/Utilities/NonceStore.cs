@@ -68,26 +68,5 @@
                 _lock.ExitWriteLock();
             }
         }
-
-        // Checks if nonce is new and adds it if so; returns false if replay
-        public bool CheckAndAddNonce(string nonce)
-        {
-            _lock.EnterWriteLock();
-            try
-            {
-                if (_usedNonces.Contains(nonce))
-                {
-                    return false; // Replay detected
-                }
-
-                File.AppendAllLines(_filePath, new[] { nonce });
-                _usedNonces.Add(nonce);
-                return true;
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
-        }
     }
 }
