@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Cryptography;
-using System.Text;
 using Newtonsoft.Json;
 
 using SpruceID_api.Models;
-using SpruceID_api.Utilities;
 using SpruceID_api.Services;
 
 namespace SpruceID_api.Controllers
@@ -34,6 +31,7 @@ namespace SpruceID_api.Controllers
                 {
                     return BadRequest(new { message = "Invalid public key." });
                 }
+
                 if (request == null || request.Payload == null || string.IsNullOrEmpty(request.Signature))
                 {
                     return BadRequest(new { message = "Payload and signature are required." });

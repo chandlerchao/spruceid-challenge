@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-
-namespace SpruceID_api.Utilities
+﻿namespace SpruceID_api.Utilities
 {
 
     public class NonceStore : INonceStore

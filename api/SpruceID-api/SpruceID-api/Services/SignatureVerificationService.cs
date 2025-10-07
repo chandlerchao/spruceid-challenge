@@ -1,9 +1,6 @@
-using System;
-using System.Text;
-
 using NSec.Cryptography;
-
 using SpruceID_api.Models;
+using System.Text;
 
 namespace SpruceID_api.Services
 {
@@ -40,6 +37,8 @@ namespace SpruceID_api.Services
             {
                 return false;
             }
+
+            // Check if timestamp is within the last 5 minutes (300 seconds)
             var currentTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if (Math.Abs(currentTime - payloadData.Timestamp) > 300)
             {
