@@ -11,8 +11,8 @@ The keys are stored in the .ssh directory of the repo. A copy of the public key 
 ### Python Client
 The client is a Python 3.13 script. It will send a nonce and timestamp in the payload to help prevent replay requests.
 
-### .Net REST API
-The Api is a .Net 8.0 ASP.net CORE project. It consists of two projects: SpruiceID-api and SpruceIDapiTestProject. The former is the REST API and the latter is a suite of unit tests.
+### .Net API
+The Api is a .Net 8.0 ASP.net CORE project. It consists of two projects: SpruiceID-api and SpruceIDapiTestProject. The former is the API and the latter is a suite of unit tests.
 
 Used nonces are kept in a text file. This is understanbly not a production strategy, but should be sufficient for this sample project. The API ensures that nonces are only good for 5 minutes
 
@@ -28,13 +28,13 @@ Activate the conda environment just created.
 
 `conda activate spruceid`
 
-### .Net REST API
+### .Net API
 The easiest way to setup and run the API is to open the .sln file in Visual Studio (v2022 preferably).
 
 After opening the solution, right click on the solution name and choose *Restore Nuget Packages*.
 
 ## Running
-### .Net REST API
+### .Net API
 With the SpruceID-api set as your default project, simply press Ctrl-F5 to start the API. It may ask you to approve the self signed certificate. It should open a browser window with the Swagger page describing the endpoints.
 
 ### Python Client
@@ -52,4 +52,4 @@ The script will prompt you for the path to the private key .pem file. By default
 
 The script will show a warning about the self-signed certificate. This can be ignored.
 
-It will out put the status code of the request and a corresponding message returned from the API.
+It will output the status code of the request and a corresponding message returned from the API.
