@@ -28,6 +28,10 @@ def extract_ed25519_seed_from_pem(keyfile_path):
     )
     return seed
 
+print()
+print('================ Digital Signature Validation ================')
+print()
+
 key_path = "../.ssh/private.pem"
 
 # Allow user to specify a different key path
@@ -66,5 +70,7 @@ payload_with_signature = {"payload": payload, "signature": signature}
 # POST the signed payload
 response = requests.post(URL, headers=headers, json=payload_with_signature, verify=False)
 
+print()
+print('================ Response ================')
 print(response.status_code)
 print(response.text)
