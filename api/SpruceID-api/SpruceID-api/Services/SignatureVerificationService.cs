@@ -4,7 +4,6 @@ using System.Text;
 using NSec.Cryptography;
 
 using SpruceID_api.Models;
-using SpruceID_api.Utilities;
 
 namespace SpruceID_api.Services
 {

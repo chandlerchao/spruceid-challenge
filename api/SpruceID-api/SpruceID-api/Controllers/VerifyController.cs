@@ -13,7 +13,7 @@ namespace SpruceID_api.Controllers
     [ApiController]
     public class VerifyController : ControllerBase
     {
-        private const string PublicKeyFilePath = "Keys/id_ed25519.pub";
+        private const string PublicKeyFilePath = "Keys/public_raw.pem";
         private readonly ISignatureVerificationService _verificationService;
 
         public VerifyController(ISignatureVerificationService verificationService)
@@ -30,7 +30,10 @@ namespace SpruceID_api.Controllers
                 string publicKey = System.IO.File.ReadAllText(PublicKeyFilePath);
                 var pk = _verificationService.LoadEd25519PublicKey(publicKey);
 
-                if (!_verificationService.CheckNonce((PayloadData)request.Payload))
+                // Deserialize Payload to PayloadData instance
+                var payloadData = JsonConvert.DeserializeObject<PayloadData>(request.Payload.ToString());
+
+                if (!_verificationService.CheckNonce(payloadData))
                 {
                     return Unauthorized(new { message = "Nonce has already been used or timestamp is invalid." });
                 }
